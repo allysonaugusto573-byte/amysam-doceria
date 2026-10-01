@@ -482,40 +482,23 @@ async function solicitarAdmin(){
   ['logUser1','logSenha1','logSenha2','logUser','logSenha'].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
   abrir('ovLogin');
 }
-function criarSenha(){
-  const u = document.getElementById('logUser1').value.trim();
-  const p1 = document.getElementById('logSenha1').value;
-  const p2 = document.getElementById('logSenha2').value;
-  if(u.length < 3){ toast('O usuário precisa ter pelo menos 3 caracteres.'); return; }
-  if(p1.length < 4){ toast('A senha precisa ter pelo menos 4 caracteres.'); return; }
-  if(p1 !== p2){ toast('As senhas não conferem.'); return; }
-
-  // Grava diretamente no armazenamento do navegador:
-  localStorage.setItem('adminCreds_bolos', JSON.stringify({ usuario: u, senha: p1 }));
-  admLogado = true;
-  fechar('ovLogin');
-  renderTudo();
-  abrirAdmin();
-  toast('Acesso criado! Você está no modo administrador.');
+async function criarSenha(){
+  const u=document.getElementById('logUser1').value.trim();
+  const p1=document.getElementById('logSenha1').value;
+  const p2=document.getElementById('logSenha2').value;
+  if(u.length<3){ toast('O usuário precisa ter pelo menos 3 caracteres.'); return; }
+  if(p1.length<4){ toast('A senha precisa ter pelo menos 4 caracteres.'); return; }
+  if(p1!==p2){ toast('As senhas não conferem.'); return; }
+  const r = await api('/api/setup',{method:'POST',body:JSON.stringify({usuario:u,senha:p1})});
+  if(r.ok){ await carregarEstado(); admLogado=true; fechar('ovLogin'); renderTudo(); abrirAdmin(); toast('Acesso criado! Você está no modo administrador.'); }
+  else toast(r.erro==='existe'?'Já existe um administrador cadastrado.':'Não foi possível criar o acesso.');
 }
-function entrarAdmin(){
-  const u = document.getElementById('logUser').value.trim();
-  const p = document.getElementById('logSenha').value;
-  try {
-    const creds = JSON.parse(localStorage.getItem('adminCreds_bolos'));
-    if(creds && creds.usuario === u && creds.senha === p){
-      admLogado = true;
-      fechar('ovLogin');
-      renderTudo();
-      abrirAdmin();
-      toast('Bem-vindo(a), ' + u + '!');
-    } else {
-      toast('Usuário ou senha incorretos.');
-    }
-  } catch(e) {
-    toast('Erro ao validar acesso.');
-  }
-}
+async function entrarAdmin(){
+  const u=document.getElementById('logUser').value.trim();
+  const p=document.getElementById('logSenha').value;
+  const r = await api('/api/login',{method:'POST',body:JSON.stringify({usuario:u,senha:p})});
+  if(r.ok){ await carregarEstado(); admLogado=true; fechar('ovLogin'); renderTudo(); abrirAdmin(); toast('Bem-vindo(a), '+ (ESTADO.usuario||u) +'!'); }
+  else toast('Usuário ou senha incorretos.');
 }
 function redefinirAcesso(){
   alert('Para redefinir o acesso do zero (esqueceu a senha), feche o servidor e apague o arquivo "loja.db" na pasta do sistema — atendimento: isso também apaga os produtos cadastrados. Depois inicie de novo e crie um novo usuário/senha. Veja o LEIA-ME.');
